@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aintree Day 2 — AI Racing Intelligence Report</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Sans+3:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0c1117;
+  --surface: #151c25;
+  --surface2: #1a232e;
+  --accent: #c8a44e;
+  --accent2: #e8c96e;
+  --green: #34d399;
+  --green-dim: #065f46;
+  --red: #f87171;
+  --blue: #60a5fa;
+  --text: #e8e8e8;
+  --text-dim: #8899aa;
+  --text-muted: #556677;
+  --border: #2a3544;
+  --winner: #c8a44e;
+  --value: #34d399;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Source Sans 3',sans-serif; line-height:1.6; }
+.container { max-width:900px; margin:0 auto; padding:20px 16px; }
+
+/* Header */
+.header { text-align:center; padding:40px 20px 30px; border-bottom:1px solid var(--border); margin-bottom:30px; position:relative; overflow:hidden; }
+.header::before { content:''; position:absolute; top:0; left:50%; transform:translateX(-50%); width:200px; height:3px; background:linear-gradient(90deg, transparent, var(--accent), transparent); }
+.header h1 { font-family:'Playfair Display',serif; font-size:2.4em; font-weight:900; color:var(--accent); letter-spacing:-0.5px; margin-bottom:4px; }
+.header .subtitle { font-size:1.1em; color:var(--text-dim); font-weight:300; }
+.header .date { font-family:'JetBrains Mono',monospace; font-size:0.85em; color:var(--text-muted); margin-top:8px; }
+
+/* Going Badge */
+.going-strip { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:20px 0 30px; }
+.going-badge { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px 18px; text-align:center; }
+.going-badge .label { font-size:0.7em; text-transform:uppercase; letter-spacing:1.5px; color:var(--text-muted); }
+.going-badge .value { font-size:0.95em; font-weight:600; color:var(--green); margin-top:2px; }
+.going-badge .stick { font-family:'JetBrains Mono',monospace; font-size:0.85em; color:var(--blue); }
+
+/* Race Card */
+.race { background:var(--surface); border:1px solid var(--border); border-radius:12px; margin-bottom:28px; overflow:hidden; }
+.race-header { padding:18px 22px; border-bottom:1px solid var(--border); background:linear-gradient(135deg, var(--surface2), var(--surface)); }
+.race-time { font-family:'JetBrains Mono',monospace; font-size:0.9em; color:var(--accent); }
+.race-name { font-family:'Playfair Display',serif; font-size:1.35em; font-weight:700; margin:4px 0 2px; }
+.race-info { font-size:0.82em; color:var(--text-muted); }
+.race-info span { margin-right:12px; }
+
+.race-body { padding:20px 22px; }
+
+/* Tips Section */
+.section-label { font-size:0.7em; text-transform:uppercase; letter-spacing:2px; color:var(--text-muted); margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+
+.pick-card { border-radius:8px; padding:14px 16px; margin-bottom:14px; }
+.pick-card.winner-pick { background:linear-gradient(135deg, rgba(200,164,78,0.08), rgba(200,164,78,0.03)); border:1px solid rgba(200,164,78,0.25); }
+.pick-card.value-pick { background:linear-gradient(135deg, rgba(52,211,153,0.08), rgba(52,211,153,0.03)); border:1px solid rgba(52,211,153,0.25); }
+.pick-card.tipster-pick { background:var(--surface2); border:1px solid var(--border); }
+
+.pick-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.pick-tag { font-size:0.65em; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; padding:3px 10px; border-radius:4px; }
+.pick-tag.win { background:rgba(200,164,78,0.2); color:var(--accent2); }
+.pick-tag.val { background:rgba(52,211,153,0.2); color:var(--green); }
+.pick-tag.tip { background:rgba(96,165,250,0.15); color:var(--blue); }
+.horse-name { font-family:'Playfair Display',serif; font-size:1.2em; font-weight:700; }
+.horse-name.gold { color:var(--accent2); }
+.horse-name.green { color:var(--green); }
+.odds { font-family:'JetBrains Mono',monospace; font-weight:600; font-size:1.1em; }
+.odds.gold { color:var(--accent2); }
+.odds.green { color:var(--green); }
+
+.pick-detail { font-size:0.88em; color:var(--text-dim); line-height:1.55; }
+.pick-detail strong { color:var(--text); font-weight:600; }
+
+.pick-factors { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.factor { font-size:0.72em; padding:3px 8px; border-radius:4px; background:rgba(255,255,255,0.04); color:var(--text-dim); border:1px solid var(--border); }
+.factor.pos { color:var(--green); border-color:rgba(52,211,153,0.2); }
+.factor.neg { color:var(--red); border-color:rgba(248,113,113,0.2); }
+.factor.neu { color:var(--blue); border-color:rgba(96,165,250,0.2); }
+
+/* Tipster Grid */
+.tipster-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:8px; margin:12px 0 16px; }
+.tipster-cell { background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:8px 10px; text-align:center; }
+.tipster-name { font-size:0.68em; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:3px; }
+.tipster-horse { font-size:0.85em; font-weight:600; color:var(--text); }
+
+.consensus { margin-top:10px; padding:10px 14px; border-radius:6px; border-left:3px solid var(--blue); background:rgba(96,165,250,0.05); }
+.consensus-label { font-size:0.7em; text-transform:uppercase; letter-spacing:1.5px; color:var(--blue); margin-bottom:3px; }
+.consensus-text { font-size:0.88em; color:var(--text-dim); }
+
+/* Disclaimer */
+.disclaimer { text-align:center; padding:30px 20px; color:var(--text-muted); font-size:0.75em; border-top:1px solid var(--border); margin-top:20px; }
+
+@media(max-width:600px){
+  .header h1 { font-size:1.8em; }
+  .race-name { font-size:1.15em; }
+  .tipster-grid { grid-template-columns:repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+  <h1>Aintree Day 2</h1>
+  <div class="subtitle">Grand National Festival — AI Racing Intelligence</div>
+  <div class="date">Friday 10 April 2026 · 7 Races · Mildmay &amp; National Course</div>
+</div>
+
+<div class="going-strip">
+  <div class="going-badge">
+    <div class="label">Mildmay Chase</div>
+    <div class="value">Good to Soft, Good in Places</div>
+    <div class="stick">GoingStick: 5.6</div>
+  </div>
+  <div class="going-badge">
+    <div class="label">Mildmay Hurdle</div>
+    <div class="value">Good to Soft, Good in Places</div>
+    <div class="stick">GoingStick: 5.2</div>
+  </div>
+  <div class="going-badge">
+    <div class="label">National Course</div>
+    <div class="value">Good to Soft</div>
+    <div class="stick">GoingStick: 4.9</div>
+  </div>
+  <div class="going-badge">
+    <div class="label">Weather</div>
+    <div class="value">Dry, Cloudy Spells</div>
+    <div class="stick">0.2mm forecast Fri</div>
+  </div>
+</div>
+
+<!-- ========== RACE 1: 13:45 ========== -->
+<div class="race">
+  <div class="race-header">
+    <div class="race-time">13:45</div>
+    <div class="race-name">William Hill Handicap Hurdle</div>
+    <div class="race-info">
+      <span>Premier Handicap</span>
+      <span>2m 4f</span>
+      <span>22 runners</span>
+      <span>Good to Soft</span>
+    </div>
+  </div>
+  <div class="race-body">
+    <div class="section-label">🏆 AI Best Pick — Most Likely Winner</div>
+    <div class="pick-card winner-pick">
+      <div class="pick-header">
+        <div><span class="pick-tag win">AI Selection</span></div>
+        <div class="odds gold">9/2</div>
+      </div>
+      <div class="horse-name gold">INDEEVAR BLEU</div>
+      <div class="pick-detail">
+        <strong>Trainer:</strong> Olly Murphy · <strong>Jockey:</strong> Sean Bowen · <strong>Age:</strong> 8<br>
+        Won easily over course and distance on Boxing Day off 129, now 138 after a 9lb rise but that still looks workable in a race where just a stone separates top and bottom. Freshened up since with a wind operation — arrives primed. Murphy's yard is in terrific form and the horse has already proven he handles this track and these conditions. The market favourite for a reason: C&D form, progressive profile, and his only Aintree start was a decisive win. The rising mark is the only concern but he was so impressive last time he looked ahead of his rating.
+      </div>
+      <div class="pick-factors">
+        <span class="factor pos">C&D Winner</span>
+        <span class="factor pos">Fresh + Wind Op</span>
+        <span class="factor pos">Trainer Hot Form</span>
+        <span class="factor neg">9lb Higher Mark</span>
+        <span class="factor neu">Hurdle Stick 5.2</span>
+      </div>
+    </div>
+
+    <div class="section-label">💎 AI Value Pick</div>
+    <div class="pick-card value-pick">
+      <div class="pick-header">
+        <div><span class="pick-tag val">Value E/W</span></div>
+        <div class="odds green">15/2</div>
+      </div>
+      <div class="horse-name green">JOYEUSE</div>
+      <div class="pick-detail">
+        <strong>Trainer:</strong> JP McManus / Nicky Henderson · <strong>Age:</strong> 6<br>
+        Third in the County Hurdle at Cheltenham — arguably unlucky on her last two starts. Gets first-time cheekpieces today which could sharpen her. She's a mare with class who has been running in stronger races than this and off 137 she could be very well handicapped if producing her A-game. Her stamina at 2m4f needs proving but she's been finishing her races well over shorter, suggesting this trip could unlock further improvement. At 15/2 she offers outstanding each-way value given her Cheltenham form ties in with top-class horses.
+      </div>
+      <div class="pick-factors">
+        <span class="factor pos">County Hurdle 3rd</span>
+        <span class="factor pos">First-Time Cheekpieces</span>
+        <span class="factor pos">Class Edge</span>
+        <span class="factor neg">Stamina Unproven at Trip</span>
+      </div>
+    </div>
+
+    <div class="section-label">📰 Tipster Consensus</div>
+    <div class="tipster-grid">
+      <div class="tipster-cell"><div class="tipster-name">ATR Tip 1</div><div class="tipster-horse">Hot Fuss</div></div>
+      <div class="tipster-cell"><div class="tipster-name">ATR Tip 2</div><div class="tipster-horse">Joyeuse</div></div>
+      <div class="tipster-cell"><div class="tipster-name">R. Walsh</div><div class="tipster-horse">Joyeuse</div></div>
+      <div class="tipster-cell"><div class="tipster-name">H. Wilson (RP)</div><div class="tipster-horse">Indeevar Bleu</div></div>
+      <div class="tipster-cell"><div class="tipster-name">A. Dudman</div><div class="tipster-horse">Favour And Fortune</div></div>
+      <div class="tipster-cell"><div class="tipster-name">N. Luck (WH)</div><div class="tipster-horse">Jazzy Matty</div></div>
+      <div class="tipster-cell"><div class="tipster-name">Jake Price</div><div class="tipster-horse">Trustintimes</div></div>
+      <div class="tipster-cell"><div class="tipster-name">HorseRacing.net</div><div class="tipster-horse">Hot Fuss</div></div>
+    </div>
+    <div class="consensus">
+      <div class="consensus-label">Tipster Consensus Winner</div>
+      <div class="consensus-text"><strong>Joyeuse</strong> (2 tips) and <strong>Hot Fuss</strong> (2 tips) lead. Wide-open handicap — market says <strong>Indeevar Bleu</strong> (5/1 fav). The split among expert tipsters reflects genuine uncertainty.</div>
+    </div>
+    <div class="consensus" style="border-left-color:var(--green); margin-top:8px;">
+      <div class="consensus-label" style="color:var(--green);">Tipster Value Pick</div>
+      <div class="consensus-text"><strong>Favour And Fortune</strong> at 17/2 (Dudman) — ran a fine third in this race last year, prepped for this off a 323-day break. Off the same mark as his Scottish Champion Hurdle win. Strong live claim.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== RACE 2: 14:20 ========== -->
+<div class="race">
+  <div class="race-header">
+    <div class="race-time">14:20</div>
+    <div class="race-name">William Hill Mildmay Novices' Chase</div>
+    <div class="race-info">
+      <span>Grade 1</span>
+      <span>3m 1f</span>
+      <span>8 runners</span>
+      <span>Good to Soft</span>
+    </div>
+  </div>
+  <div class="race-body">
+    <div class="section-label">🏆 AI Best Pick — Most Likely Winner</div>
+    <div class="pick-card winner-pick">
+      <div class="pick-header">
+        <div><span class="pick-tag win">AI Selection</span></div>
+        <div class="odds gold">4/1</div>
+      </div>
+      <div class="horse-name gold">SALVER</div>
+      <div class="pick-detail">
+        <strong>Trainer:</strong> Philip Hobbs & Johnson White · <strong>Jockey:</strong> Ben Jones · <strong>Age:</strong> 7<br>
+        Career-best third in the Brown Advisory at Cheltenham — the strongest piece of recent form in this field. The two who finished ahead of him (Sir Donjour and Doyen Doyen) are not lining up, so on paper Salver is the form pick. He's a strong, relentless galloper who should love Aintree's long straight to power clear. While he may prefer softer ground, he handled quick conditions at Cheltenham. Wendigo fell at the last when not far behind him in the Brown Advisory, adding further depth to his form. The son of Motivator still has scope for improvement.
+      </div>
+      <div class="pick-factors">
+        <span class="factor pos">Brown Advisory 3rd — Top Form</span>
+        <span class="factor pos">Strong Galloper Suits Track</span>
+        <span class="factor pos">Key rivals absent</span>
+        <span class="factor neg">May prefer softer ground</span>
+      </div>
+    </div>
+
+    <div class="section-label">💎 AI Value Pick</div>
+    <div class="pick-card value-pick">
+      <div class="pick-header">
+        <div><span class="pick-tag val">Value E/W</span></div>
+        <div class="odds green">9/2</div>
+      </div>
+      <div class="horse-name green">REGENT'S STROLL</div>
+      <div class="pick-detail">
+        <strong>Trainer:</strong> Paul Nicholls · <strong>Jockey:</strong> Harry Cobden · <strong>Age:</strong> 7<br>
+        Third in the Jack Richards at Cheltenham — was doing his best work at the finish, running the final furlong faster than runner-up Gold Dancer. Nicholls says the step up to 3m1f is perfect for him now. Crucially, he was runner-up in a novice hurdle at Aintree last year, so he has course form. This sharper, flatter track should suit him better than the Cheltenham hill. At 9/2 alongside Gold Dancer (7/2 fav) he looks overpriced.
+      </div>
+      <div class="pick-factors">
+        <span class="factor pos">Aintree Course Form</span>
+        <span class="factor pos">Trainer says wants 3m+</span>
+        <span class="factor pos">Strong late run Cheltenham</span>
+        <span class="factor neu">Step up in trip</span>
+      </div>
+    </div>
+
+    <div class="section-label">📰 Tipster Consensus</div>
+    <div class="tipster-grid">
+      <div class="tipster-cell"><div class="tipster-name">ATR Tip 1</div><div class="tipster-horse">Salver</div></div>
+      <div class="tipster-cell"><div class="tipster-name">ATR Tip 2</div><div class="tipster-horse">Salver</div></div>
+      <div class="tipster-cell"><div class="tipster-name">R. Walsh</div><div class="tipster-horse">Salver</div></div>
+      <div class="tipster-cell"><div class="tipster-name">H. Wilson (RP)</div><div class="tipster-horse">Regent's Stroll</div></div>
+      <div class="tipster-cell"><div class="tipster-name">A. Dudman</div><div class="tipster-horse">Regent's Stroll</div></div>
+      <div class="tipster-cell"><div class="tipster-name">Jake Price</div><div class="tipster-horse">Doyen Quest</div></div>
+    </div>
+    <div class="consensus">
+      <div class="consensus-label">Tipster Consensus Winner</div>
+      <div class="consensus-text"><strong>Salver</strong> dominates with 3 picks from top tipsters including Ruby Walsh. Interesting that <strong>Gold Dancer</strong> (7/2 fav) isn't tipped by any of the major names despite heading the market — the smart money may be on Salver.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== RACE 3: 14:55 ========== -->
+<div class="race">
+  <div class="race-header">
+    <div class="race-time">14:55</div>
+    <div class="race-name">ThatPrizeGuy Top Novices' Hurdle</div>
+    <div class="race-info">
+      <span>Grade 1</span>
+      <span>2m ½f</span>
+      <span>6 runners</span>
+      <span>Good to Soft</span>
+    </div>
+  </div>
+  <div class="race-body">
+    <div class="section-label">🏆 AI Best Pick — Most Likely Winner</div>
+    <div class="pick-card winner-pick">
+      <div class="pick-header">
+        <div><span class="pick-tag win">AI Selection</span></div>
+        <div class="odds gold">4/6</div>
+      </div>
+      <div class="horse-name gold">SOBER GLORY</div>
+      <div class="pick-detail">
+        <strong>Trainer:</strong> Philip Hobbs & Johnson White · <strong>Jockey:</strong> Ben Jones · <strong>Age:</strong> 6<br>
+        This looks the banker of the day. Posted an excellent time when winning at Newbury and then was arguably unlucky not to win the Supreme at Cheltenham — a bad mistake at the last broke his momentum when travelling best of all. He had been progressing all season and that Supreme run confirmed him as top-class. At just 6, he's lightly raced and could have even more improvement in him. Only 6 rivals, he's proven on Good to Soft ground, and his class advantage is enormous. He jumps fluently when right and should be able to dominate from the front. The only risk is that he might not be value at 4/6, but he's the most likely winner on the card.
+      </div>
+      <div class="pick-factors">
+        <span class="factor pos">Supreme near-miss — best form</span>
+        <span class="factor pos">Front-runner on flat track</span>
+        <span class="factor pos">Proven on ground</span>
+        <span class="factor pos">Lightly raced, more to come</span>
+        <span class="factor neg">Short price — skinny 4/6</span>
+      </div>
+    </div>
+
+    <div class="section-label">💎 AI Value Pick</div>
+    <div class="pick-card value-pick">
+      <div class="pick-header">
+        <div><span class="pick-tag val">Value E/W</span></div>
+        <div class="odds green">18/5</div>
+      </div>
+      <div class="horse-name green">BARON NOIR</div>
+      <div class="pick-detail">
+        <strong>Trainer:</strong> Willie Mullins · <strong>Jockey:</strong> Paul Townend · <strong>Age:</strong> 5<br>
+        Finished two places behind Sober Glory in the Supreme having raced off the pace. He did the best of those held up, closing strongly up the Cheltenham hill. At Aintree's flatter track, a more positive ride could see him get much closer. He has a turn of foot and the Mullins factor cannot be ignored — if Sober Glory puts in another late mistake, Baron Noir is the one most likely to capitalise. At 18/5 he's fair value for the place.
+      </div>
+      <div class="pick-factors">
+        <span class="factor pos">Supreme form — best of closers</span>
+        <span class="factor pos">Mullins/Townend combo</span>
+        <span class="factor pos">Turn of foot</span>
+        <span class="factor neg">Needs Sober Glory to falter</span>
+      </div>
+    </div>
+
+    <div class="section-label">📰 Tipster Consensus</div>
+    <div class="tipster-grid">
+      <div class="tipster-cell"><div class="tipster-name">ATR (both)</div><div class="tipster-horse">Sober Glory</div></div>
+      <div class="tipster-cell"><div class="tipster-name">R. Walsh</div><div class="tipster-horse">Sober Glory</div></div>
+      <div class="tipster-cell"><div class="tipster-name">H. Wilson (RP)</div><div class="tipster-horse">Sober Glory</div></div>
+      <div class="tipster-cell"><div class="tipster-name">N. Luck (WH)</div><div class="tipster-horse">Baron Noir</div></div>
+    </div>
+    <div class="consensus">
+      <div class="consensus-label">Tipster Consensus Winner</div>
+      <div class="consensus-text"><strong>Sober Glory</strong> — unanimous from almost everyone. Nick Luck is the lone dissenter favouring Baron Noir as an alternative. This is the strongest consensus on the card.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== RACE 4: 15:30 ========== -->
+<div class="race">
+  <div class="race-header">
+    <div class="race-time">15:30</div>
+    <div class="race-name">JCB Melling Chase</div>
+    <div class="race-info">
+      <span>Grade 1</span>
+      <span>2m 4f</span>
+      <span>7 runners</span>
+      <span>Good to Soft</span>
+    </div>
+  </div>
+  <div class="race-body">
+    <div class="section-label">🏆 AI Best Pick — Most Likely Winner</div>
+    <div class="pick-card winner-pick">
+      <div class="pick-header">
+        <div><span class="pick-tag win">AI Selection</span></div>
+        <div class="odds gold">11/8</div>
+      </div>
+      <div class="horse-name gold">HEART WOOD</div>
+      <div class="pick-detail">
+        <strong>Trainer:</strong> Henry De Bromhead · <strong>Jockey:</strong> Rachael Blackmore · <strong>Age:</strong> 8<br>
+        Emphatic Ryanair Chase winner at Cheltenham — beat Jonbon comprehensively on Good ground. That was a career-best on his favoured surface and he's had a light campaign this season, so freshness shouldn't be an issue. The absence of Jonbon (who won this the last two years) significantly strengthens his position. He travelled and jumped superbly in the Ryanair and there was a strong impression there was still more to come. Grey Dawning is the main danger dropping in trip from the Gold Cup with cheekpieces, but Heart Wood has proven form on this quicker ground and the Ryanair form makes him the clear form pick. De Bromhead has a 22% strike rate at Aintree festival.
+      </div>
+      <div class="pick-factors">
+        <span class="factor pos">Ryanair Winner — Career Best</span>
+        <span class="factor pos">Good Ground Specialist</span>
+        <span class="factor pos">Light Campaign = Fresh</span>
+        <span class="factor pos">Jonbon Absent</span>
+        <span class="factor neg">Quick Turnaround from Cheltenham</span>
+      </div>
+    </div>
+
+    <div class="section-label">💎 AI Value Pick</div>
+    <div class="pick-card value-pick">
+      <div class="pick-header">
+        <div><span class="pick-tag val">Value E/W</span></div>
+        <div class="odds green">21/5</div>
+      </div>
+      <div class="horse-name green">GREY DAWNING</div>
+      <div class="pick-detail">
+        <strong>Trainer:</strong> Dan Skelton · <strong>Jockey:</strong> Harry Skelton · <strong>Age:</strong> 8<br>
+        Fourth in the Gold Cup — ran a huge race until stamina gave way. Now drops back to 2m4f with first-time cheekpieces which should sharpen his jumping. Won the Betfair Chase earlier this season at 3m, so this trip is shorter than his comfort zone — but the cheekpieces and shorter trip together could ignite him. Aintree's flat track is made for him — he was a close second here last year to Gaelic Warrior. If Heart Wood has any post-Cheltenham flatness, Grey Dawning is primed to pounce. The 21/5 looks generous for a dual Grade 1 winner.
+      </div>
+      <div class="pick-factors">
+        <span class="factor pos">Aintree 2nd Last Year</span>
+        <span class="factor pos">First-Time Cheekpieces</span>
+        <span class="factor pos">Drops in Trip — More Speed</span>
+        <span class="factor pos">Betfair Chase Winner</span>
+        <span class="factor neg">Sloppy jumper at times</span>
+      </div>
+    </div>
+
+    <div class="section-label">📰 Tipster Consensus</div>
+    <div class="tipster-grid">
+      <div class="tipster-cell"><div class="tipster-name">ATR (both)</div><div class="tipster-horse">Heart Wood</div></div>
+      <div class="tipster-cell"><div class="tipster-name">R. Walsh</div><div class="tipster-horse">Heart Wood</div></div>
+      <div class="tipster-cell"><div class="tipster-name">H. Wilson (RP)</div><div class="tipster-horse">JPR One</div></div>
+      <div class="tipster-cell"><div class="tipster-name">A. Dudman</div><div class="tipster-horse">Grey Dawning</div></div>
+      <div class="tipster-cell"><div class="tipster-name">HorseRacing.net</div><div class="tipster-horse">Heart Wood</div></div>
+    </div>
+    <div class="consensus">
+      <div class="consensus-label">Tipster Consensus Winner</div>
+      <div class="consensus-text"><strong>Heart Wood</strong> is the overwhelming choice. Dudman dissents with Grey Dawning, while Wilson takes a speculative punt on JPR One at bigger odds. The market and tipsters align: Heart Wood is the one to beat.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== RACE 5: 16:05 ========== -->
+<div class="race">
+  <div class="race-header">
+    <div class="race-time">16:05</div>
+    <div class="race-name">Randox Topham Handicap Chase</div>
+    <div class="race-info">
+      <span>Premier Handicap</span>
+      <span>2m 5f</span>
+      <span>28 runners (National fences)</span>
+      <span>Good to Soft</span>
+    </div>
+  </div>
+  <div class="race-body">
+    <div class="section-label">🏆 AI Best Pick — Most Likely Winner</div>
+    <div class="pick-card winner-pick">
+      <div class="pick-header">
+        <div><span class="pick-tag win">AI Selection</span></div>
+        <div class="odds gold">9/2</div>
+      </div>
+      <div class="horse-name gold">MADARA</div>
+      <div class="pick-detail">
+        <strong>Trainer:</strong> Dan Skelton · <strong>Jockey:</strong> Harry Skelton · <strong>Age:</strong> 7<br>
+        Won the Cheltenham Plate last month when justifying favouritism — a strong piece of handicap form. Now carries a 10lb rise to 148, but Skelton has clearly mapped out a programme with this race in mind. At just 7, he's young and progressive, and the drying conditions (GoingStick 4.9 on the National course) will suit his jumping style. He's 9/2 market leader for a reason — progressive, well-trained, and his Cheltenham Plate form is the best recent handicap form on offer. The big field and National fences add an element of lottery, but class usually tells in this race.
+      </div>
+      <div class="pick-factors">
+        <span class="factor pos">Cheltenham Plate Winner</span>
+        <span class="factor pos">Progressive 7yo</span>
+        <span class="factor pos">Skelton — Top Trainer</span>
+        <span class="factor neg">10lb Higher Mark</span>
+        <span class="factor neg">28 Runners — Lottery Element</span>
+      </div>
+    </div>
+
+    <div class="section-label">💎 AI Value Pick</div>
+    <div class="pick-card value-pick">
+      <div class="pick-header">
+        <div><span class="pick-tag val">Value E/W</span></div>
+        <div class="odds green">16/1</div>
+      </div>
+      <div class="horse-name green">BOOMBAWN</div>
+      <div class="pick-detail">
+        <strong>Trainer:</strong> Dan Skelton · <strong>Jockey:</strong> Tristan Durrell · <strong>Age:</strong> 8<br>
+        This is the Skelton runner that has been specifically targeted at the Topham. He's a winner at Aintree over hurdles and has produced his two best chase Racing Post Ratings at this track — clear course specialist form. The drying ground is in his favour (acts on Good and Good to Soft) and he's well handicapped on his peak form. Harry Wilson (Racing Post) picked him ahead of stablemate Madara, and when a seasoned form expert specifically says this has been the target all season, that's meaningful. At 16/1, the each-way value is huge at 5 places.
+      </div>
+      <div class="pick-factors">
+        <span class="factor pos">Aintree Specialist — Best RPRs Here</span>
+        <span class="factor pos">Specifically Targeted at This</span>
+        <span class="factor pos">Ground Suits</span>
+        <span class="factor pos">16/1 E/W Huge Value</span>
+        <span class="factor neg">Needs to jump the National fences</span>
+      </div>
+    </div>
+
+    <div class="section-label">📰 Tipster Consensus</div>
+    <div class="tipster-grid">
+      <div class="tipster-cell"><div class="tipster-name">ATR Tip 1</div><div class="tipster-horse">Will The Wise</div></div>
+      <div class="tipster-cell"><div class="tipster-name">ATR Tip 2</div><div class="tipster-horse">Excello</div></div>
+      <div class="tipster-cell"><div class="tipster-name">R. Walsh</div><div class="tipster-horse">Lisnamult Lad</div></div>
+      <div class="tipster-cell"><div class="tipster-name">H. Wilson (RP)</div><div class="tipster-horse">Boombawn</div></div>
+      <div class="tipster-cell"><div class="tipster-name">N. Luck (WH)</div><div class="tipster-horse">Gentleman De Mee</div></div>
+      <div class="tipster-cell"><div class="tipster-name">HorseRacing.net</div><div class="tipster-horse">Gentleman De Mee</div></div>
+    </div>
+    <div class="consensus">
+      <div class="consensus-label">Tipster Consensus Winner</div>
+      <div class="consensus-text"><strong>Gentleman De Mee</strong> (2 tips) — won this race last year and is 2-2 at Aintree. Only 3lbs higher. Remarkably, the market favourite Madara isn't specifically tipped by any of the big names — every expert has gone for a different angle. This screams each-way race.</div>
+    </div>
+    <div class="consensus" style="border-left-color:var(--green); margin-top:8px;">
+      <div class="consensus-label" style="color:var(--green);">Tipster Value Pick</div>
+      <div class="consensus-text"><strong>Lisnamult Lad</strong> at 18/1 (Ruby Walsh) — runner-up last year, "looked home for all money" before being caught late. At a bigger price, genuine value.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== RACE 6: 16:40 ========== -->
+<div class="race">
+  <div class="race-header">
+    <div class="race-time">16:40</div>
+    <div class="race-name">Oddschecker Sefton Novices' Hurdle</div>
+    <div class="race-info">
+      <span>Grade 1</span>
+      <span>3m ½f</span>
+      <span>13 runners</span>
+      <span>Good to Soft</span>
+    </div>
+  </div>
+  <div class="race-body">
+    <div class="section-label">🏆 AI Best Pick — Most Likely Winner</div>
+    <div class="pick-card winner-pick">
+      <div class="pick-header">
+        <div><span class="pick-tag win">AI Selection</span></div>
+        <div class="odds gold">11/2</div>
+      </div>
+      <div class="horse-name gold">MONDOUI'BOY</div>
+      <div class="pick-detail">
+        <strong>Trainer:</strong> Ben Pauling · <strong>Jockey:</strong> Ben Jones · <strong>Age:</strong> 6<br>
+        Fourth in the Albert Bartlett but that position flatters to deceive — he was by far the best of those who raced prominently, doing extremely well to hang on after being hassled in front the entire way. At Aintree's less testing, flatter track with drier conditions, a slightly more reserved ride could see him reverse form with Johnny's Jury (4/1 fav) who came from way off the pace. His bumper form was exceptional and he's won his first two hurdle starts in decisive fashion on Good to Soft. The less demanding surface here compared to Cheltenham's soft ground could be the key. Harry Wilson (Racing Post), Alan Dudman (Betfair), and Nick Luck (William Hill) all independently pick him — that's significant.
+      </div>
+      <div class="pick-factors">
+        <span class="factor pos">Best of Pace-Makers in Albert Bartlett</span>
+        <span class="factor pos">Drier Ground Suits</span>
+        <span class="factor pos">Flatter Track Ideal</span>
+        <span class="factor pos">3 Major Tipsters Agree</span>
+        <span class="factor neg">Beaten 4th Last Time</span>
+      </div>
+    </div>
+
+    <div class="section-label">💎 AI Value Pick</div>
+    <div class="pick-card value-pick">
+      <div class="pick-header">
+        <div><span class="pick-tag val">Value E/W</span></div>
+        <div class="odds green">6/1</div>
+      </div>
+      <div class="horse-name green">ZEUS POWER</div>
+      <div class="pick-detail">
+        <strong>Trainer:</strong> Willie Mullins · <strong>Jockey:</strong> Paul Townend · <strong>Age:</strong> 6<br>
+        Flew home in the Turners at Cheltenham having been hampered at a crucial stage — he caught the eye of Ruby Walsh who specifically picked him for this race, saying "I was keen to be with him wherever he turned up next." The step up in trip from 2m4f to 3m looks ideal based on how strongly he was finishing at Cheltenham. He's been rapidly progressing in this sphere and Mullins/Townend is always a combination to respect. At 6/1 he offers value if his stamina holds over this extra distance.
+      </div>
+      <div class="pick-factors">
+        <span class="factor pos">Ruby Walsh's Pick</span>
+        <span class="factor pos">Strong Finish Turners</span>
+        <span class="factor pos">Mullins/Townend</span>
+        <span class="factor pos">Rapidly Progressing</span>
+        <span class="factor neg">Stamina at 3m Unproven</span>
+      </div>
+    </div>
+
+    <div class="section-label">📰 Tipster Consensus</div>
+    <div class="tipster-grid">
+      <div class="tipster-cell"><div class="tipster-name">ATR Tip 1</div><div class="tipster-horse">Johnny's Jury</div></div>
+      <div class="tipster-cell"><div class="tipster-name">ATR Tip 2</div><div class="tipster-horse">Mondoui'boy</div></div>
+      <div class="tipster-cell"><div class="tipster-name">R. Walsh</div><div class="tipster-horse">Zeus Power</div></div>
+      <div class="tipster-cell"><div class="tipster-name">H. Wilson (RP)</div><div class="tipster-horse">Mondoui'boy</div></div>
+      <div class="tipster-cell"><div class="tipster-name">A. Dudman</div><div class="tipster-horse">Mondoui'boy</div></div>
+      <div class="tipster-cell"><div class="tipster-name">N. Luck (WH)</div><div class="tipster-horse">Mondoui'boy</div></div>
+    </div>
+    <div class="consensus">
+      <div class="consensus-label">Tipster Consensus Winner</div>
+      <div class="consensus-text"><strong>Mondoui'boy</strong> dominates with 4 picks — the strongest consensus outside of Sober Glory. Notably, Albert Bartlett winner <strong>Johnny's Jury</strong> (4/1 fav) has just 1 tipster backing him. The experts think this form can be reversed on better ground at a flatter track.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== RACE 7: 17:15 ========== -->
+<div class="race">
+  <div class="race-header">
+    <div class="race-time">17:15</div>
+    <div class="race-name">Debenhams Handicap Hurdle</div>
+    <div class="race-info">
+      <span>Conditional/Amateur Riders</span>
+      <span>2m ½f</span>
+      <span>21 runners</span>
+      <span>Good to Soft</span>
+    </div>
+  </div>
+  <div class="race-body">
+    <div class="section-label">🏆 AI Best Pick — Most Likely Winner</div>
+    <div class="pick-card winner-pick">
+      <div class="pick-header">
+        <div><span class="pick-tag win">AI Selection</span></div>
+        <div class="odds gold">4/1</div>
+      </div>
+      <div class="horse-name gold">HARRY LOWES</div>
+      <div class="pick-detail">
+        <strong>Trainer:</strong> Dan Skelton · <strong>Jockey:</strong> Tristan Durrell · <strong>Age:</strong> 6<br>
+        Skelton won this race last year and targets it again with a horse who may be one of the best handicapped in training according to Nick Luck. Harry Lowes is a Bangor winner who has been marking time for a bigger target — the conditional/amateur rider race fits perfectly with Tristan Durrell, Skelton's talented conditional who claims 5lbs. The race often sets up for closers when inexperienced jockeys get racing too early, and Harry Lowes is proven over further distances, meaning he'll stay on strongly when others tire. Skelton's record in this specific race gives added confidence.
+      </div>
+      <div class="pick-factors">
+        <span class="factor pos">Skelton Won This Last Year</span>
+        <span class="factor pos">Durrell 5lb Claim</span>
+        <span class="factor pos">Proven Stayer — Will Close Late</span>
+        <span class="factor pos">Nick Luck's Best Bet</span>
+        <span class="factor neg">Conditional/Amateur — Jockey Inexperience</span>
+      </div>
+    </div>
+
+    <div class="section-label">💎 AI Value Pick</div>
+    <div class="pick-card value-pick">
+      <div class="pick-header">
+        <div><span class="pick-tag val">Value E/W</span></div>
+        <div class="odds green">9/1</div>
+      </div>
+      <div class="horse-name green">POURQUOI PAS PAPA</div>
+      <div class="pick-detail">
+        <strong>Trainer:</strong> Paul Nicholls · <strong>Age:</strong> 4<br>
+        Caught the eye in the Fred Winter at Cheltenham — flew home from a poor position having met trouble. He's well treated on his best French form and should be capable of much better for his new yard. Gets the 4yo juvenile allowance which is a big advantage at the weights, and Nicholls has specifically aimed him here. He's the pick of the ATR experts (Tip 2 column) who note his experience on quicker ground and his strong stamina for the trip. At 9/1 each-way with a hot trainer, he's a live player.
+      </div>
+      <div class="pick-factors">
+        <span class="factor pos">Fred Winter Eye-Catcher</span>
+        <span class="factor pos">4yo Weight Allowance</span>
+        <span class="factor pos">Paul Nicholls Targeted</span>
+        <span class="factor pos">French Form = High Ceiling</span>
+        <span class="factor neg">Lightly raced in UK</span>
+      </div>
+    </div>
+
+    <div class="section-label">📰 Tipster Consensus</div>
+    <div class="tipster-grid">
+      <div class="tipster-cell"><div class="tipster-name">ATR Tip 1</div><div class="tipster-horse">Sherminator</div></div>
+      <div class="tipster-cell"><div class="tipster-name">ATR Tip 2</div><div class="tipster-horse">Pourquoi Pas Papa</div></div>
+      <div class="tipster-cell"><div class="tipster-name">R. Walsh</div><div class="tipster-horse">Last Kingdom</div></div>
+      <div class="tipster-cell"><div class="tipster-name">H. Wilson (RP)</div><div class="tipster-horse">Rubber Ball</div></div>
+      <div class="tipster-cell"><div class="tipster-name">N. Luck (WH)</div><div class="tipster-horse">Harry Lowes</div></div>
+    </div>
+    <div class="consensus">
+      <div class="consensus-label">Tipster Consensus Winner</div>
+      <div class="consensus-text">Complete scatter — every tipster picks a different horse, reflecting a truly open handicap. <strong>Sherminator</strong> (5/1) is unbeaten when completing over hurdles. <strong>Harry Lowes</strong> (4/1 fav) has the Skelton factor. Wide open — the value play is better than trying to find the winner.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div class="race" style="border-color:var(--accent);">
+  <div class="race-header" style="background:linear-gradient(135deg, rgba(200,164,78,0.12), var(--surface));">
+    <div class="race-name" style="color:var(--accent);">📋 Summary Card — AI Selections</div>
+  </div>
+  <div class="race-body">
+    <table style="width:100%; border-collapse:collapse; font-size:0.88em;">
+      <tr style="border-bottom:1px solid var(--border); color:var(--text-muted); font-size:0.78em; text-transform:uppercase; letter-spacing:1px;">
+        <td style="padding:8px 4px;">Race</td>
+        <td style="padding:8px 4px;">🏆 AI Winner</td>
+        <td style="padding:8px 4px;">Odds</td>
+        <td style="padding:8px 4px;">💎 AI Value</td>
+        <td style="padding:8px 4px;">Odds</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px 4px; color:var(--text-dim);">13:45</td>
+        <td style="padding:10px 4px; color:var(--accent2); font-weight:700;">Indeevar Bleu</td>
+        <td style="padding:10px 4px; font-family:'JetBrains Mono',monospace;">9/2</td>
+        <td style="padding:10px 4px; color:var(--green); font-weight:700;">Joyeuse</td>
+        <td style="padding:10px 4px; font-family:'JetBrains Mono',monospace;">15/2</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px 4px; color:var(--text-dim);">14:20</td>
+        <td style="padding:10px 4px; color:var(--accent2); font-weight:700;">Salver</td>
+        <td style="padding:10px 4px; font-family:'JetBrains Mono',monospace;">4/1</td>
+        <td style="padding:10px 4px; color:var(--green); font-weight:700;">Regent's Stroll</td>
+        <td style="padding:10px 4px; font-family:'JetBrains Mono',monospace;">9/2</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px 4px; color:var(--text-dim);">14:55</td>
+        <td style="padding:10px 4px; color:var(--accent2); font-weight:700;">Sober Glory ⭐</td>
+        <td style="padding:10px 4px; font-family:'JetBrains Mono',monospace;">4/6</td>
+        <td style="padding:10px 4px; color:var(--green); font-weight:700;">Baron Noir</td>
+        <td style="padding:10px 4px; font-family:'JetBrains Mono',monospace;">18/5</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px 4px; color:var(--text-dim);">15:30</td>
+        <td style="padding:10px 4px; color:var(--accent2); font-weight:700;">Heart Wood ⭐</td>
+        <td style="padding:10px 4px; font-family:'JetBrains Mono',monospace;">11/8</td>
+        <td style="padding:10px 4px; color:var(--green); font-weight:700;">Grey Dawning</td>
+        <td style="padding:10px 4px; font-family:'JetBrains Mono',monospace;">21/5</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px 4px; color:var(--text-dim);">16:05</td>
+        <td style="padding:10px 4px; color:var(--accent2); font-weight:700;">Madara</td>
+        <td style="padding:10px 4px; font-family:'JetBrains Mono',monospace;">9/2</td>
+        <td style="padding:10px 4px; color:var(--green); font-weight:700;">Boombawn</td>
+        <td style="padding:10px 4px; font-family:'JetBrains Mono',monospace;">16/1</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px 4px; color:var(--text-dim);">16:40</td>
+        <td style="padding:10px 4px; color:var(--accent2); font-weight:700;">Mondoui'boy</td>
+        <td style="padding:10px 4px; font-family:'JetBrains Mono',monospace;">11/2</td>
+        <td style="padding:10px 4px; color:var(--green); font-weight:700;">Zeus Power</td>
+        <td style="padding:10px 4px; font-family:'JetBrains Mono',monospace;">6/1</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 4px; color:var(--text-dim);">17:15</td>
+        <td style="padding:10px 4px; color:var(--accent2); font-weight:700;">Harry Lowes</td>
+        <td style="padding:10px 4px; font-family:'JetBrains Mono',monospace;">4/1</td>
+        <td style="padding:10px 4px; color:var(--green); font-weight:700;">Pourquoi Pas Papa</td>
+        <td style="padding:10px 4px; font-family:'JetBrains Mono',monospace;">9/1</td>
+      </tr>
+    </table>
+
+    <div style="margin-top:20px; padding:16px; background:rgba(200,164,78,0.06); border:1px solid rgba(200,164,78,0.2); border-radius:8px;">
+      <div style="font-size:0.72em; text-transform:uppercase; letter-spacing:1.5px; color:var(--accent); margin-bottom:6px;">⭐ Strongest Picks of the Day</div>
+      <div style="font-size:0.92em; color:var(--text-dim); line-height:1.6;">
+        <strong style="color:var(--accent2);">SOBER GLORY (14:55)</strong> — Near-unanimous consensus, Supreme form towers above this field. The banker.<br>
+        <strong style="color:var(--accent2);">HEART WOOD (15:30)</strong> — Ryanair winner, Jonbon absent, ideal conditions. The star turn.<br>
+        <strong style="color:var(--green);">BOOMBAWN (16:05 — 16/1 E/W)</strong> — Aintree specialist, targeted at this by Skelton. Best value on the card.<br>
+        <strong style="color:var(--green);">MONDOUI'BOY (16:40)</strong> — 4 of 6 major tipsters agree, track and ground switch unlocks reversal.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="disclaimer">
+  AI Racing Intelligence Report · Aintree Grand National Festival Day 2 · 10 April 2026<br>
+  Odds from Oddschecker at ~09:00. All odds subject to change. Please gamble responsibly.<br>
+  Analysis based on form, ground, course profile, trainer records, and cross-referenced expert tipster consensus.
+</div>
+
+</div>
+</body>
+</html>
